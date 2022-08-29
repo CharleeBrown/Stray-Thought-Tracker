@@ -87,6 +87,7 @@ namespace StrayThought
                 ListViewItem thoughts = new ListViewItem(doc["date"].ToString());
                 thoughts.SubItems.Add(doc["thought"].ToString());
                 transfer = thoughts; 
+
             }
 
             return transfer;
