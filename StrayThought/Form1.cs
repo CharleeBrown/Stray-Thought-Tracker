@@ -5,6 +5,10 @@ using System.Data;
 using System.Text;
 using System.IO;
 using System.Linq;
+using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Bson.IO;
+using MongoDB.Driver.Core;
+
 namespace StrayThought
 {
     public partial class Form1 : Form
@@ -26,14 +30,7 @@ namespace StrayThought
                 var data = textBox1.Text;
               //  conns.connected(data);
                 ListViewItem info = new ListViewItem(DateTime.Now.ToShortDateString());
-                var cursor = from doc in conns.connected(data)
-                             where data != null
-                             select doc;
-
-                foreach(var item in cursor)
-                {
-                    info.SubItems.Add(item);
-                }
+                
                 info.SubItems.Add(data);
                 listView1.Items.Add(info);
                 textBox1.Clear();
@@ -45,7 +42,7 @@ namespace StrayThought
             Update ups = new Update();
 
             var tests = ups.PullThoughts();
-            IEnumerable<ListViewItem> lv = listView1.Items.Cast<ListViewItem>();
+          
             listView1.Items.Add(tests);
         }
     }
@@ -74,7 +71,7 @@ namespace StrayThought
     {
         public ListViewItem PullThoughts()
         {
-            
+            ListViewItem transfer = new ListViewItem();
             var settings = MongoClientSettings.FromConnectionString("mongodb+srv://lee:Gamez2232@cluster0.guc9f.mongodb.net/?retryWrites=true&w=majority");
 
             settings.ServerApi = new ServerApi(ServerApiVersion.V1);
@@ -83,28 +80,29 @@ namespace StrayThought
             var db = client.GetDatabase("misc");
 
             var collect = db.GetCollection<BsonDocument>("bday");
+            var cursor = collect.Find(new BsonDocument()).ToList();
 
-            BsonDocument query = new BsonDocument();
+            foreach(BsonDocument doc in cursor)
+            {
+                ListViewItem thoughts = new ListViewItem(doc["date"].ToString());
+                thoughts.SubItems.Add(doc["thought"].ToString());
+                transfer = thoughts; 
+            }
 
-            query.Add("", "*");
+            return transfer;
 
-            var results = collect.Find(new BsonDocument()).FirstOrDefault();
-
-            ListViewItem thoughts = new ListViewItem();
-        
-                thoughts.SubItems.Add(results["thought"].ToString());
-                thoughts.SubItems.Add(results["date"].ToString());
-                
-                //holdList.Add(results["thought"].ToString());
-       
            
-            return thoughts;
+    
         }
-            
-           // BsonDocument addObj = new BsonDocument().Add("date", current.ToShortDateString());
-            // add connection to configuration
+        
+    }
 
-        
-        
+    class DataObj
+    {
+        [BsonElement("date")]
+        public string date { get; set; }
+
+        [BsonElement("thought")]
+        public string thought { get; set; }
     }
 }
