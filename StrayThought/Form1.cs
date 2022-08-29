@@ -4,6 +4,7 @@ using System;
 using System.Data;
 using System.Text;
 using System.IO;
+using System.Linq;
 namespace StrayThought
 {
     public partial class Form1 : Form
@@ -11,6 +12,9 @@ namespace StrayThought
         public Form1()
         {
             InitializeComponent();
+            listView1.Columns.Add("Date");
+            listView1.Columns.Add("Thought");
+            listView1.View = View.Details;
         }
 
         private void textBox1_KeyPress(object sender, KeyPressEventArgs e)
@@ -19,8 +23,19 @@ namespace StrayThought
 
             if(e.KeyChar == (char)Keys.Enter)
             {
-                conns.connected(textBox1.Text);
-                listBox1.Items.Add(textBox1.Text);
+                var data = textBox1.Text;
+              //  conns.connected(data);
+                ListViewItem info = new ListViewItem(DateTime.Now.ToShortDateString());
+                var cursor = from doc in conns.connected(data)
+                             where data != null
+                             select doc;
+
+                foreach(var item in cursor)
+                {
+                    info.SubItems.Add(item);
+                }
+                info.SubItems.Add(data);
+                listView1.Items.Add(info);
                 textBox1.Clear();
             }
         }
@@ -28,15 +43,16 @@ namespace StrayThought
         private void Form1_Load(object sender, EventArgs e)
         {
             Update ups = new Update();
-            foreach(var item in ups.PullThoughts())
-            {
-                listBox1.Items.Add(item);
-            }
+
+            var tests = ups.PullThoughts();
+            IEnumerable<ListViewItem> lv = listView1.Items.Cast<ListViewItem>();
+            listView1.Items.Add(tests);
         }
     }
 
     public class Conn
     {
+        // Connects to the database and inserts the thoughts to the database.
         public string connected(string thoughts) {
             DateTime current = DateTime.Now;
             var settings = MongoClientSettings.FromConnectionString("mongodb+srv://lee:Gamez2232@cluster0.guc9f.mongodb.net/?retryWrites=true&w=majority");
@@ -56,24 +72,33 @@ namespace StrayThought
 
     public class Update
     {
-        public List<string> PullThoughts()
+        public ListViewItem PullThoughts()
         {
-            List<string> holdList = new List<string>();
-            DateTime current = DateTime.Now;
+            
             var settings = MongoClientSettings.FromConnectionString("mongodb+srv://lee:Gamez2232@cluster0.guc9f.mongodb.net/?retryWrites=true&w=majority");
+
             settings.ServerApi = new ServerApi(ServerApiVersion.V1);
             var client = new MongoClient(settings);
+
             var db = client.GetDatabase("misc");
+
             var collect = db.GetCollection<BsonDocument>("bday");
+
             BsonDocument query = new BsonDocument();
-            query.Add("date", current.ToShortDateString());
+
+            query.Add("", "*");
+
             var results = collect.Find(new BsonDocument()).FirstOrDefault();
-            if (results.Any()) {
-                MessageBox.Show(results.ToString());
-                holdList.Add(results["thought"].ToString());
-            }
+
+            ListViewItem thoughts = new ListViewItem();
+        
+                thoughts.SubItems.Add(results["thought"].ToString());
+                thoughts.SubItems.Add(results["date"].ToString());
+                
+                //holdList.Add(results["thought"].ToString());
+       
            
-            return holdList;
+            return thoughts;
         }
             
            // BsonDocument addObj = new BsonDocument().Add("date", current.ToShortDateString());
