@@ -41,9 +41,20 @@ namespace StrayThought
         {
             Update ups = new Update();
 
-            var tests = ups.PullThoughts();
-          
-            listView1.Items.Add(tests);
+            var data = ups.PullThoughts();
+            
+           /* foreach(var item in data)
+            {
+                MessageBox.Show(item.ToString());
+            }*/
+           
+            for(var i = 0; i< data.Count; i++)
+            {
+                ListViewItem adds = new ListViewItem(data["date"])
+                listView1.Items.Add(data["date"]);
+                listView1.Items.Add(data["thought"]);
+            }
+            listView1.Items.Add(data);
         }
     }
 
@@ -69,31 +80,50 @@ namespace StrayThought
 
     public class Update
     {
-        public ListViewItem PullThoughts()
+        public List<string> PullThoughts()
         {
-            ListViewItem transfer = new ListViewItem();
+            List<string> transfer = new List<string>();
             var settings = MongoClientSettings.FromConnectionString("mongodb+srv://lee:Gamez2232@cluster0.guc9f.mongodb.net/?retryWrites=true&w=majority");
 
-            settings.ServerApi = new ServerApi(ServerApiVersion.V1);
+            
             var client = new MongoClient(settings);
 
             var db = client.GetDatabase("misc");
 
             var collect = db.GetCollection<BsonDocument>("bday");
-            var cursor = collect.Find(new BsonDocument()).ToList();
+            var cursor = collect.Find(_ => true).ToList();
 
-            foreach(BsonDocument doc in cursor)
+            var filter = Builders<BsonDocument>.Filter.Lt("date", "8/31/2022");
+            var projection = Builders<BsonDocument>.Projection.Include("date").Include("thought").Exclude("_id");
+            var result = collect.Find(filter).Project(projection).ToList();
+
+              
+                        foreach(BsonDocument doc in result)
+                        {
+                        List<string> thoughts = new List<string>();
+                            thoughts.Add(doc["date"].ToString());
+                            thoughts.Add(doc["thought"].ToString());
+                            transfer = thoughts; 
+
+                        }
+            if (result.Count > 0)
             {
-                ListViewItem thoughts = new ListViewItem(doc["date"].ToString());
-                thoughts.SubItems.Add(doc["thought"].ToString());
-                transfer = thoughts; 
+                foreach (var item in result)
+                {
 
+                    List<string> go = new List<string>();
+                    go.Add(item["date"].ToString());
+                    go.Add(item["thought"].ToString());
+                    transfer = go;
+                }
+            }
+            else
+            {
+                MessageBox.Show("No Records");
             }
 
             return transfer;
 
-           
-    
         }
         
     }
