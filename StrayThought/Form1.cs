@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.IO;
+using System.Configuration;
 using MongoDB.Driver.Core;
 
 namespace StrayThought
@@ -28,7 +29,7 @@ namespace StrayThought
             if(e.KeyChar == (char)Keys.Enter)
             {
                 var data = textBox1.Text;
-              //  conns.connected(data);
+                conns.Connector(data);
                 ListViewItem info = new ListViewItem(DateTime.Now.ToShortDateString());
                 
                 info.SubItems.Add(data);
@@ -39,32 +40,44 @@ namespace StrayThought
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            Update ups = new Update();
+            Update updateList = new Update();
 
-            var data = ups.PullThoughts();
+            var updates = updateList.PullThoughts();
+            DataTable dt = new DataTable();
             
-           /* foreach(var item in data)
+            ListViewItem mainItem = new ListViewItem(updates[0]);
+            IDataAdapter adapter = new IDataAdapter(updates);
+            mainItem.SubItems.Add(updates[1]);
+            listView1.Items.Add(mainItem);
+
+
+            for (int i = 0; i < dt.Rows.Count; i++)
             {
-                MessageBox.Show(item.ToString());
-            }*/
-           
-            for(var i = 0; i< data.Count; i++)
-            {
-                ListViewItem adds = new ListViewItem(data["date"])
-                listView1.Items.Add(data["date"]);
-                listView1.Items.Add(data["thought"]);
+                DataRow dr = dt.Rows[i];
+                ListViewItem listitem = new ListViewItem(dr["pk_Location_ID"].ToString());
+                listitem.SubItems.Add(dr["var_Location_Name"].ToString());
+                listitem.SubItems.Add(dr["fk_int_District_ID"].ToString());
+                listitem.SubItems.Add(dr["fk_int_Company_ID"].ToString());
+                listView1.Items.Add(listitem);
             }
-            listView1.Items.Add(data);
+
+        }
+
+        private void listView1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
         }
     }
 
     public class Conn
     {
-        // Connects to the database and inserts the thoughts to the database.
-        public string connected(string thoughts) {
+   
+        public string Connector(string thoughts) {
+            //Grab current date
             DateTime current = DateTime.Now;
-            var settings = MongoClientSettings.FromConnectionString("mongodb+srv://lee:Gamez2232@cluster0.guc9f.mongodb.net/?retryWrites=true&w=majority");
-            settings.ServerApi = new ServerApi(ServerApiVersion.V1);
+            var x = ConfigurationManager.ConnectionStrings["mongos"];
+            var settings = MongoClientSettings.FromConnectionString(x.ConnectionString);
+            //settings.ServerApi = new ServerApi(ServerApiVersion.V1);
             var client = new MongoClient(settings);
             var db = client.GetDatabase("misc");
             var collect = db.GetCollection<BsonDocument>("bday");
